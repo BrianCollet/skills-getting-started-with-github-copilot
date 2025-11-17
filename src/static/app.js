@@ -36,7 +36,15 @@ function displayActivities(activities) {
     activityCard.className = "activity-card";
 
     const participantsList = activity.participants
-      .map((email) => `<li>${email}</li>`)
+      .map((email) => `
+        <div class="participant-item">
+          <span class="participant-email">${email}</span>
+          <button class="delete-btn" onclick="unregisterParticipant('${name}', '${email}')"
+                  title="Remove participant">
+            <span class="delete-icon">×</span>
+          </button>
+        </div>
+      `)
       .join("");
 
     const spotsRemaining = activity.max_participants - activity.participants.length;
@@ -50,7 +58,7 @@ function displayActivities(activities) {
             <div class="participants-section">
                 <h5>Current Participants:</h5>
                 ${activity.participants.length > 0 ? 
-                    `<ul class="participants-list">${participantsList}</ul>` : 
+                    `<div class="participants-list">${participantsList}</div>` : 
                     '<p class="no-participants">No participants yet - be the first to sign up!</p>'
                 }
             </div>
@@ -112,6 +120,35 @@ async function handleSignup(event) {
     }
   } catch (error) {
     console.error("Error during signup:", error);
+    showMessage("Network error. Please try again later.", "error");
+  }
+}
+
+// Unregister a participant from an activity
+async function unregisterParticipant(activityName, email) {
+  if (!confirm(`Are you sure you want to unregister ${email} from ${activityName}?`)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `/activities/${encodeURIComponent(activityName)}/unregister?email=${encodeURIComponent(email)}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    const result = await response.json();
+
+    if (response.ok) {
+      showMessage(result.message, "success");
+      // Reload activities to show updated participant list
+      loadActivities();
+    } else {
+      showMessage(result.detail || "An error occurred during unregistration.", "error");
+    }
+  } catch (error) {
+    console.error("Error during unregistration:", error);
     showMessage("Network error. Please try again later.", "error");
   }
 }
